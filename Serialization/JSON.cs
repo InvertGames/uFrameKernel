@@ -186,20 +186,36 @@ namespace uFrame.Serialization {
 
         public override string ToString()
         {
-            string result = "{";
+            return ToString(false);
+        }
+        public override string ToString(bool isRoot)
+        {
+
+            if (isRoot)
+            {
+                TabIndex = 0;
+            }
+            string result = TabString + "{";
+            result += Environment.NewLine;
+            TabIndex++;
+            var i = 0;
             foreach (KeyValuePair<string, JSONNode> N in m_Dict)
             {
-                if (result.Length > 2)
-                    result += ", ";
-                result += string.Format("\"{0}\":{1}", Escape(N.Key), N.Value.ToString());
+                if (i > 0)
+                    result += TabString + ", " + Environment.NewLine;
+                result += TabString + string.Format("\"{0}\":{1}", Escape(N.Key), N.Value.ToString());
+                i++;
             }
-            result += "}";
+            TabIndex--;
+            result += TabString + "}" + Environment.NewLine;
             return result;
         }
 
         public override string ToString(string aPrefix)
         {
             string result = "{ ";
+            result += Environment.NewLine;
+            TabIndex++;
             foreach (KeyValuePair<string, JSONNode> N in m_Dict)
             {
                 if (result.Length > 3)
@@ -208,6 +224,8 @@ namespace uFrame.Serialization {
                 result += string.Format("\"{0}\" : {1}", Escape(N.Key), N.Value.ToString(aPrefix + "   "));
             }
             result += string.Format("\n{0}}}", aPrefix);
+            TabIndex--;
+            result += "}" + Environment.NewLine;
             return result;
         }
     }
@@ -526,6 +544,20 @@ namespace uFrame.Serialization {
     }
     public class JSONNode
     {
+        public static int TabIndex { get; set; }
+
+        public static string TabString
+        {
+            get
+            {
+                var str = "";
+                for (var i = 0; i < TabIndex; i++)
+                {
+                    str += "\t";
+                }
+                return str;
+            }
+        }
         #region common interface
 
         public virtual IEnumerable<JSONNode> Childs { get { yield break; } }
@@ -572,6 +604,10 @@ namespace uFrame.Serialization {
             return aNode;
         }
 
+        public virtual string ToString(bool isRoot)
+        {
+            return ToString();
+        }
         public override string ToString()
         {
             return "JSONNode";
@@ -1207,15 +1243,27 @@ namespace uFrame.Serialization {
 
         public override string ToString()
         {
+            return ToString(false);
+        }
+        public override string ToString(bool isRoot)
+        {
+            if (isRoot)
+            {
+                TabIndex = 0;
+            }
             string result = "[ ";
+            TabIndex++;
+            result += Environment.NewLine;
             for (int index = 0; index < m_List.Count; index++)
             {
                 JSONNode N = m_List[index];
-                if (result.Length > 2)
+                if (index > 0)
                     result += ", ";
                 result += N.ToString();
             }
+            TabIndex--;
             result += " ]";
+            result +=Environment.NewLine;
             return result;
         }
 
