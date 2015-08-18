@@ -259,6 +259,14 @@ namespace uFrame.Serialization {
             m_Data = aData;
         }
 
+        public JSONData(string aData, bool forceString)
+        {
+            m_Data = aData;
+            _forceString = forceString;
+        }
+
+        private bool _forceString { get; set; }
+
         public JSONData(float aData)
         {
             AsFloat = aData;
@@ -318,7 +326,14 @@ namespace uFrame.Serialization {
 
         public override string ToString()
         {
+
+            if (_forceString)
+            {
+                return string.Format("\"{0}\"", Escape(m_Data));
+            }
+
             var tmp = new JSONData("");
+
             tmp.AsInt = AsInt;
 
             if (tmp.m_Data == this.m_Data)
@@ -338,6 +353,14 @@ namespace uFrame.Serialization {
 
         public override string ToString(string aPrefix)
         {
+
+
+
+            if (_forceString)
+            {
+                return string.Format("\"{0}\"", Escape(m_Data));
+            }
+
             var tmp = new JSONData("");
             tmp.AsInt = AsInt;
 
