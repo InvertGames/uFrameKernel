@@ -128,6 +128,10 @@ namespace uFrame.Kernel
                 service.Setup();
                 yield return StartCoroutine(service.SetupAsync());
                 this.Publish(new ServiceLoaderEvent() {State = ServiceState.Loaded, Service = service});
+            } 
+            foreach (var service in allServices)
+            {
+                service.Loaded();
             }
 
             this.Publish(new SystemsLoadedEvent()

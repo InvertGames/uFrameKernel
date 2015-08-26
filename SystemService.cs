@@ -22,6 +22,11 @@ namespace uFrame.Kernel
             yield break;
         }
 
+        public virtual void Loaded()
+        {
+            
+        }
+
         public virtual void Dispose()
         {
 

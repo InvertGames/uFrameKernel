@@ -22,5 +22,9 @@ namespace uFrame.Kernel
         /// <returns></returns>
         IEnumerator SetupAsync();
 
+        /// <summary>
+        /// The loaded method is invoked after all setup methods are invoked on a Service
+        /// </summary>
+        void Loaded();
     }
 }

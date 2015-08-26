@@ -48,6 +48,11 @@ namespace uFrame.Kernel
             yield break;
         }
 
+        public virtual void Loaded()
+        {
+            
+        }
+
         protected override void OnDestroy()
         {
             Disposer.Dispose();
