@@ -1109,7 +1109,7 @@ namespace uFrame.Serialization {
         {
         }
 
-        internal static string Escape(string aText)
+        public static string Escape(string aText)
         {
 
 
