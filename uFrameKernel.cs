@@ -2,9 +2,9 @@
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
+using Invert.IOC;
 using UnityEngine;
 using uFrame.Attributes;
-using uFrame.IOC;
 using UniRx;
 
 namespace uFrame.Kernel

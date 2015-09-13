@@ -1,7 +1,7 @@
 ﻿using System;
 using UnityEngine;
 using System.Collections;
-using uFrame.IOC;
+using Invert.IOC;
 using uFrame.Kernel;
 
 namespace uFrame.Kernel

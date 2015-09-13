@@ -47,11 +47,8 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using UnityEngine;
-#if UNITY_DLL || DLL
 namespace Invert.Json {
-#else
-namespace uFrame.Serialization { 
-#endif
+
     public static class JSON
     {
         public static JSONNode Parse(string aJSON)
@@ -247,7 +244,7 @@ namespace uFrame.Serialization {
         {
             AsVector2 = value;
         }
-#if UNITY_DLL
+#if UNITY
         public JSONData(Quaternion value)
         {
             AsQuaternion = value;
@@ -721,7 +718,7 @@ namespace uFrame.Serialization {
                 return this as JSONClass;
             }
         }
-#if UNITY_DLL || UNITY_4_0 || UNITY_4_1||UNITY_4_2 || UNITY_4_3 || UNITY_4_4 || UNITY_4_5 || UNITY_4_6 || UNITY_5_0 || UNITY_5_1 || UNITY_3_0
+#if !PORTABLE
         public virtual Quaternion AsQuaternion
         {
             get

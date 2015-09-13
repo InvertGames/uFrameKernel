@@ -1,5 +1,5 @@
 using System.Collections;
-using uFrame.IOC;
+using Invert.IOC;
 using UniRx;
 
 namespace uFrame.Kernel

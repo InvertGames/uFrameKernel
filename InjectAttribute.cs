@@ -1,10 +1,8 @@
 using System;
 
-#if DLL
+
 namespace Invert.IOC
-#else
-namespace uFrame.IOC
-#endif
+
 {
 
     /// <summary>

@@ -4,11 +4,8 @@ using System.Diagnostics;
 using System.Linq;
 using System.Reflection;
 
-#if DLL
 namespace Invert.IOC
-#else
-namespace uFrame.IOC
-#endif
+
 {
     /// <summary>
     /// A ViewModel Container and a factory for Controllers and commands.

@@ -4,6 +4,7 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
+using Invert.Json;
 using uFrame.Serialization;
 
 public static class SerializationExtensions{

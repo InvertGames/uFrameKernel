@@ -1,10 +1,8 @@
 using System;
 using System.Collections.Generic;
-#if DLL
+
 namespace Invert.IOC
-#else
-namespace uFrame.IOC
-#endif
+
 {
 
     public interface IUFrameContainer
