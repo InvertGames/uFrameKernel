@@ -101,7 +101,7 @@ public static class SerializationExtensions{
             if (typeof(IList).IsAssignableFrom(objectType)) // collection detected
             {
 
-                var type = objectType.GetGenericArguments()[0];
+                //var type = objectType.GetGenericArguments()[0];
                 var list = target as IEnumerable;
                 var jsonArray = new JSONArray();
 
