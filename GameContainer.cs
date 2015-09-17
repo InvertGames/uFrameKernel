@@ -54,23 +54,24 @@ namespace uFrame.IOC
         /// <returns>List of objects.</returns>
         public IEnumerable<object> ResolveAll(Type type)
         {
-            foreach (var instance1 in Instances.Where(p => p.Base == type && !string.IsNullOrEmpty(p.Name)))
+            foreach (KeyValuePair<Tuple<Type, string>, object> kv in Instances)
             {
-                yield return instance1.Instance;
+                if(kv.Key.Item1 == type && !string.IsNullOrEmpty(kv.Key.Item2))
+                    yield return kv.Value;
             }
 
-            foreach (var mapping in Mappings)
+            foreach (KeyValuePair<Tuple<Type, string>, Type> kv in Mappings)
             {
-                if (!string.IsNullOrEmpty(mapping.Name))
+                if (!string.IsNullOrEmpty(kv.Key.Item2))
                 {
 #if NETFX_CORE 
                     var condition = type.GetTypeInfo().IsSubclassOf(mapping.From);
 #else
-                    var condition = type.IsAssignableFrom(mapping.From);
+                    var condition = type.IsAssignableFrom(kv.Key.Item1);
 #endif
                     if (condition)
                     {
-                        var item = Activator.CreateInstance(mapping.To);
+                        var item = Activator.CreateInstance(kv.Value);
                         Inject(item);
                         yield return item;
                     }
@@ -275,13 +276,9 @@ namespace uFrame.IOC
         }
         public void InjectAll()
         {
-            foreach (var instance in Instances)
+            foreach (object instance in Instances.Values)
             {
-                Inject(instance.Instance);
-            }
-            foreach (var namedInstance in Instances)
-            {
-                Inject(namedInstance.Instance);
+                Inject(instance);
             }
         }
         private TypeRelationCollection _relationshipMappings = new TypeRelationCollection();
@@ -312,89 +309,111 @@ namespace uFrame.IOC
         }
     }
 
-    public class TypeMappingCollection : List<TypeMapping>
+    // http://stackoverflow.com/questions/1171812/multi-key-dictionary-in-c
+    public class Tuple<T1, T2>  //FUCKING Unity: struct is not supported in Mono
+    {
+        public readonly T1 Item1;
+        public readonly T2 Item2;
+        public Tuple(T1 item1, T2 item2) { Item1 = item1; Item2 = item2; }
+
+        public override bool Equals(Object obj)
+        {
+            Tuple<T1, T2> p = obj as Tuple<T1, T2>;
+            if(obj == null) return false;
+
+            if(Item1 == null)
+            {
+                if (p.Item1 != null) return false;
+            }
+            else
+            {
+                if (p.Item1 == null || !Item1.Equals(p.Item1)) return false;
+            }
+            if (Item2 == null)
+            {
+                if (p.Item2 != null) return false;
+            }
+            else
+            {
+                if (p.Item2 == null || !Item2.Equals(p.Item2)) return false;
+            }
+            return true;
+        }
+
+        public override int GetHashCode()
+        {
+            int hash = 0;
+            if (Item1 != null)
+                hash ^= Item1.GetHashCode();
+            if (Item2 != null)
+                hash ^= Item2.GetHashCode();
+            return hash;
+        }
+    }
+
+    // Kanglai: Using Dictionary rather than List!
+    public class TypeMappingCollection : Dictionary<Tuple<Type, string>, Type>
     {
         public Type this[Type from, string name = null]
         {
             get
             {
-                var mapping = this.FirstOrDefault(p => p.From == from && p.Name == name);
-                if (mapping != null)
+                Tuple<Type, string> key = new Tuple<Type, string>(from, name);
+                Type mapping = null;
+                if(this.TryGetValue(key, out mapping))
                 {
-                    return mapping.To;
+                    return mapping;
                 }
                 return null;
             }
             set
             {
-                var mapping = this.FirstOrDefault(p => p.From == from && p.Name == name);
-                if (mapping == null)
-                {
-                    Add(new TypeMapping() { From = from, Name = name, To = value });
-                }
-                else
-                {
-                    mapping.To = value;
-                    mapping.Name = name;
-                }
+                Tuple<Type, string> key = new Tuple<Type, string>(from, name);
+                this[key] = value;
             }
         }
     }
-    public class TypeInstanceCollection : List<RegisteredInstance>
+    public class TypeInstanceCollection : Dictionary<Tuple<Type, string>, object>
     {
 
         public object this[Type from, string name = null]
         {
             get
             {
-                var mapping = this.FirstOrDefault(p => p.Base == from && p.Name == name);
-                if (mapping != null)
+                Tuple<Type, string> key = new Tuple<Type, string>(from, name);
+                object mapping = null;
+                if (this.TryGetValue(key, out mapping))
                 {
-                    return mapping.Instance;
+                    return mapping;
                 }
                 return null;
             }
             set
             {
-                var mapping = this.FirstOrDefault(p => p.Base == from && p.Name == name);
-                if (mapping == null)
-                {
-                    Add(new RegisteredInstance() { Base = from, Name = name, Instance = value });
-                }
-                else
-                {
-                    mapping.Instance = value;
-                    mapping.Name = name;
-                }
+                Tuple<Type, string> key = new Tuple<Type, string>(from, name);
+                this[key] = value;
             }
         }
     }
-    public class TypeRelationCollection : List<TypeRelation>
+    public class TypeRelationCollection : Dictionary<Tuple<Type, Type>, Type>
     {
         
         public Type this[Type from, Type to]
         {
             get
             {
-                var mapping = this.FirstOrDefault(p => p.From == from && p.To == to);
-                if (mapping != null)
+                Tuple<Type, Type> key = new Tuple<Type, Type>(from, to);
+                Type mapping = null;
+                if (this.TryGetValue(key, out mapping))
                 {
-                    return mapping.Concrete;
+                    return mapping;
                 }
                 return null;
             }
             set
             {
-                var mapping = this.FirstOrDefault(p => p.From == from && p.To == to);
-                if (mapping == null)
-                {
-                    Add(new TypeRelation() { From = from, To = to, Concrete = value });
-                }
-                else
-                {
-                    mapping.Concrete = value;
-
-                }
+                Tuple<Type, Type> key = new Tuple<Type, Type>(from, to); 
+                this[key] = value;
             }
         }
     }
