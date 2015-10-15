@@ -185,26 +185,25 @@ namespace uFrame.Kernel
     {
         public uFrameKernel Kernel;
     }
+
     /// <summary>
-    /// 
+    /// This is invoked directly after all scenes of 
     /// </summary>
     [uFrameEvent("Kernel Loaded")]
     public class KernelLoadedEvent
     {
         public uFrameKernel Kernel;
     }
+
     /// <summary>
-    /// 
+    /// The game ready event is invoked after the kernel has loaded and two addditional frames have occured.
     /// </summary>
     [uFrameEvent("Game Ready")]
     public class GameReadyEvent
     {
 
     }
-    /// <summary>
-    /// 
-    /// </summary>
-    
+
     public class LoadSceneCommand
     {
 
@@ -213,7 +212,6 @@ namespace uFrame.Kernel
         public bool RestrictToSingleScene { get; set; }
     }
 
-    
     public class UnloadSceneCommand
     {
         public string SceneName { get; set; }

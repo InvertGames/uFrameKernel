@@ -42,9 +42,7 @@ namespace uFrame.Kernel
     }
 
 
-    /// <summary>
-    /// 
-    /// </summary>
+
     public class DefaultSceneLoader : SceneLoader<IScene>
     {
 
