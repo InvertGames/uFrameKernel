@@ -1,25 +1,10 @@
-using System;
 using System.Collections;
 using UniRx;
-using UnityEngine;
+using UnityEngine.Networking;
 
 namespace uFrame.Kernel
 {
-    /// <summary>
-    /// The uFrameComponent is a simple class that extends from MonoBehaviour, and is directly plugged into the kernel.
-    /// Use this component when creating any components manually or if you need to plug existing libraries into the uFrame system.
-    /// <example>
-    /// public class MyComponent : uFrameComponent {
-    /// }
-    /// </example></summary>
-    /// <example>
-    /// 	<para>public class MyComponent : uFrameComponent {</para>
-    /// 	<para>      public override void KernelLoaded() {</para>
-    /// 	<para>             this.Publish(new MyComponentCreatedEvent() { Instance = this });</para>
-    /// 	<para>      }</para>
-    /// 	<para>}</para>
-    /// </example>
-    public class uFrameComponent : MonoBehaviour, IDisposableContainer
+    public class uFrameNetworkComponent : NetworkBehaviour, IDisposableContainer
     {
         private CompositeDisposable _disposer;
 
@@ -79,7 +64,7 @@ namespace uFrame.Kernel
         /// </summary>
         public virtual void KernelLoaded()
         {
-            
+
         }
 
 

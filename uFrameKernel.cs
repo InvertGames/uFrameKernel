@@ -1,4 +1,5 @@
-﻿using System;
+﻿#define FAST_EVENTS
+using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
@@ -64,7 +65,12 @@ namespace uFrame.Kernel
 
         public static IEventAggregator EventAggregator
         {
-            get { return _eventAggregator ?? (_eventAggregator = new EventAggregator()); }
+#if FAST_EVENTS
+            get { return _eventAggregator ?? (_eventAggregator = new TypedEventAggregator()); }
+#else
+             get { return _eventAggregator ?? (_eventAggregator = new EventAggregator()); }
+#endif
+
             set { _eventAggregator = value; }
         }
 
