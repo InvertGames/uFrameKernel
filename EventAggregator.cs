@@ -1,7 +1,9 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Linq;
 using JetBrains.Annotations;
+using uFrame.Attributes;
 using UniRx;
 
 namespace uFrame.Kernel
@@ -16,7 +18,7 @@ namespace uFrame.Kernel
             return eventsSubject.Where(p =>
             {
                 return p is TEvent;
-            }).Select(delegate(object p)
+            }).Select(delegate (object p)
             {
                 return (TEvent)p;
             });
@@ -62,10 +64,12 @@ namespace uFrame.Kernel
 
     public interface IEventManager
     {
-        Type For { get;  }
+        int EventId { get; set; }
+        Type For { get; }
         void Publish(object evt);
 
     }
+
     public class EventManager<TEventType> : IEventManager
     {
         private Subject<TEventType> _eventType;
@@ -76,7 +80,27 @@ namespace uFrame.Kernel
             set { _eventType = value; }
         }
 
-        public Type For { get { return typeof (TEventType); } }
+        private int _eventId;
+        public int EventId
+        {
+            get
+            {
+                if (_eventId > 0)
+                    return _eventId;
+
+                var eventIdAttribute =
+                    For.GetCustomAttributes(typeof(EventId), true).FirstOrDefault() as
+                        EventId;
+                if (eventIdAttribute != null)
+                {
+                    return _eventId = eventIdAttribute.Identifier;
+                }
+                return _eventId;
+            }
+            set { _eventId = value; }
+        }
+
+        public Type For { get { return typeof(TEventType); } }
         public void Publish(object evt)
         {
             if (_eventType != null)
@@ -85,7 +109,8 @@ namespace uFrame.Kernel
             }
         }
     }
-    public class TypedEventAggregator : IEventAggregator
+
+    public class EcsEventAggregator : IEventAggregator
     {
         private Dictionary<Type, IEventManager> _managers;
 
@@ -94,14 +119,43 @@ namespace uFrame.Kernel
             get { return _managers ?? (_managers = new Dictionary<Type, IEventManager>()); }
             set { _managers = value; }
         }
+        private Dictionary<int, IEventManager> _managersById;
+
+        public Dictionary<int, IEventManager> ManagersById
+        {
+            get { return _managersById ?? (_managersById = new Dictionary<int, IEventManager>()); }
+            set { _managersById = value; }
+        }
+
+        public IEventManager GetEventManager(int eventId)
+        {
+            if (ManagersById.ContainsKey(eventId))
+                return ManagersById[eventId];
+            return null;
+        }
+        //public IEventManager GetEventManager(Type type)
+        //{
+        //    if (ManagersById.ContainsKey(eventId))
+        //        return ManagersById[eventId];
+        //    return null;
+        //}
 
         public IObservable<TEvent> GetEvent<TEvent>()
         {
             IEventManager eventManager;
-            if (!Managers.TryGetValue(typeof (TEvent), out eventManager))
+            if (!Managers.TryGetValue(typeof(TEvent), out eventManager))
             {
                 eventManager = new EventManager<TEvent>();
                 Managers.Add(typeof(TEvent), eventManager);
+                var eventId = eventManager.EventId;
+                if (eventId > 0)
+                {
+                    ManagersById.Add(eventId, eventManager);
+                }
+                else
+                {
+                    // create warning here that eventid attribute is not set
+                }
             }
             var em = eventManager as EventManager<TEvent>;
             if (em == null) return null;
@@ -111,7 +165,7 @@ namespace uFrame.Kernel
         public void Publish<TEvent>(TEvent evt)
         {
             IEventManager eventManager;
-   
+
             if (!Managers.TryGetValue(evt.GetType(), out eventManager))
             {
                 // No listeners anyways
@@ -120,6 +174,14 @@ namespace uFrame.Kernel
             eventManager.Publish(evt);
 
         }
+
+        public void PublishById(int eventId, object data)
+        {
+            var evt = GetEventManager(eventId);
+            if (evt != null)
+                evt.Publish(data);
+        }
+
     }
 
 }

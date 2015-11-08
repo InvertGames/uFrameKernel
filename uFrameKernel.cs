@@ -66,7 +66,7 @@ namespace uFrame.Kernel
         public static IEventAggregator EventAggregator
         {
 #if FAST_EVENTS
-            get { return _eventAggregator ?? (_eventAggregator = new TypedEventAggregator()); }
+            get { return _eventAggregator ?? (_eventAggregator = new EcsEventAggregator()); }
 #else
              get { return _eventAggregator ?? (_eventAggregator = new EventAggregator()); }
 #endif
