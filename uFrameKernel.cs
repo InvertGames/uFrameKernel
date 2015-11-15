@@ -111,6 +111,7 @@ namespace uFrame.Kernel
                 systemLoader.Container = Container;
                 systemLoader.EventAggregator = EventAggregator;
                 systemLoader.Load();
+                yield return StartCoroutine(systemLoader.LoadAsync());
                 SystemLoaders.Add(systemLoader);
                 this.Publish(new SystemLoaderEvent() {State = SystemState.Loaded, Loader = systemLoader});
             }
@@ -123,17 +124,23 @@ namespace uFrame.Kernel
             foreach (var service in attachedServices)
             {
                 Container.RegisterService(service);
-                Services.Add(service);
+                
             }
 
             Container.InjectAll();
             var allServices = Container.ResolveAll<ISystemService>().ToArray();
+            foreach (var item in allServices)
+                Services.Add(item);
+
             foreach (var service in allServices)
             {
-                this.Publish(new ServiceLoaderEvent() {State = ServiceState.Loading, Service = service});
-                service.Setup();
                 yield return StartCoroutine(service.SetupAsync());
-                this.Publish(new ServiceLoaderEvent() {State = ServiceState.Loaded, Service = service});
+            }
+            foreach (var service in allServices)
+            {
+                this.Publish(new ServiceLoaderEvent() { State = ServiceState.Loading, Service = service });
+                service.Setup();
+                this.Publish(new ServiceLoaderEvent() { State = ServiceState.Loaded, Service = service });
             } 
             foreach (var service in allServices)
             {

@@ -11,6 +11,8 @@ namespace uFrame.Kernel
 
         void Load();
 
+        IEnumerator LoadAsync();
+
         IUFrameContainer Container { get; set; }
 
         IEventAggregator EventAggregator { get; set; }
@@ -22,6 +24,11 @@ namespace uFrame.Kernel
         public virtual void Load()
         {
 
+        }
+
+        public virtual IEnumerator LoadAsync()
+        {
+            yield break;
         }
 
         public IUFrameContainer Container { get; set; }
