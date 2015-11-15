@@ -17,6 +17,7 @@ namespace uFrame.IOC
     public class UFrameContainer : IUFrameContainer
 
     {
+        private readonly Dictionary<Type, TypeInjectionInfo> _typeInjectionInfos = new Dictionary<Type, TypeInjectionInfo>();
         private TypeInstanceCollection _instances;
         private TypeMappingCollection _mappings;
 
@@ -95,28 +96,50 @@ namespace uFrame.IOC
         public void Inject(object obj)
         {
             if (obj == null) return;
+
+            Type objectType = obj.GetType();
+
+            TypeInjectionInfo typeInjectionInfo;
+            if (!_typeInjectionInfos.TryGetValue(objectType, out typeInjectionInfo)) {
+                List<TypeInjectionInfo.InjectionMemberInfo<PropertyInfo>> propertyInjectionInfos = new List<TypeInjectionInfo.InjectionMemberInfo<PropertyInfo>>();
+                List<TypeInjectionInfo.InjectionMemberInfo<FieldInfo>> fieldInjectionInfos = new List<TypeInjectionInfo.InjectionMemberInfo<FieldInfo>>();
 #if !NETFX_CORE
-            var members = obj.GetType().GetMembers();
+                var members = obj.GetType().GetMembers();
 #else
-            var members = obj.GetType().GetTypeInfo().DeclaredMembers;
+                var members = obj.GetType().GetTypeInfo().DeclaredMembers;
 #endif
-            foreach (var memberInfo in members)
-            {
-                var injectAttribute =
-                    memberInfo.GetCustomAttributes(typeof(InjectAttribute), true).FirstOrDefault() as InjectAttribute;
-                if (injectAttribute != null)
-                {
-                    if (memberInfo is PropertyInfo)
+                Type injectAttributeType = typeof(InjectAttribute);
+                foreach (var memberInfo in members) {
+                    InjectAttribute injectAttribute = (InjectAttribute) Attribute.GetCustomAttribute(memberInfo, injectAttributeType);
+                    if (injectAttribute == null)
+                        continue;
+
+                    var propertyInfo = memberInfo as PropertyInfo;
+                    if (propertyInfo != null)
                     {
-                        var propertyInfo = memberInfo as PropertyInfo;
-                        propertyInfo.SetValue(obj, Resolve(propertyInfo.PropertyType, injectAttribute.Name), null);
+                        propertyInjectionInfos.Add(new TypeInjectionInfo.InjectionMemberInfo<PropertyInfo>(propertyInfo, propertyInfo.PropertyType, injectAttribute.Name));
+                        continue;
                     }
-                    else if (memberInfo is FieldInfo)
+
+                    var fieldInfo = memberInfo as FieldInfo;
+                    if (fieldInfo != null)
                     {
-                        var fieldInfo = memberInfo as FieldInfo;
-                        fieldInfo.SetValue(obj, Resolve(fieldInfo.FieldType, injectAttribute.Name));
+                        fieldInjectionInfos.Add(new TypeInjectionInfo.InjectionMemberInfo<FieldInfo>(fieldInfo, fieldInfo.FieldType, injectAttribute.Name));
                     }
                 }
+
+                typeInjectionInfo = new TypeInjectionInfo(propertyInjectionInfos.ToArray(), fieldInjectionInfos.ToArray());
+                _typeInjectionInfos.Add(objectType, typeInjectionInfo);
+            }
+
+            for (int i = 0; i < typeInjectionInfo.PropertyInjectionInfos.Length; i++) {
+                var injectionInfo = typeInjectionInfo.PropertyInjectionInfos[i];
+                injectionInfo.MemberInfo.SetValue(obj, Resolve(injectionInfo.MemberType, injectionInfo.InjectName), null);
+            }
+
+            for (int i = 0; i < typeInjectionInfo.FieldInjectionInfos.Length; i++) {
+                var injectionInfo = typeInjectionInfo.FieldInjectionInfos[i];
+                injectionInfo.MemberInfo.SetValue(obj, Resolve(injectionInfo.MemberType, injectionInfo.InjectName));
             }
         }
 
@@ -228,7 +251,7 @@ namespace uFrame.IOC
 #if !NETFX_CORE
             ConstructorInfo[] constructor = type.GetConstructors(BindingFlags.Public | BindingFlags.Instance);
 #else
-        ConstructorInfo[] constructor = type.GetTypeInfo().DeclaredConstructors.ToArray();
+            ConstructorInfo[] constructor = type.GetTypeInfo().DeclaredConstructors.ToArray();
 #endif
 
             if (constructor.Length < 1)
@@ -306,6 +329,32 @@ namespace uFrame.IOC
         public TBase ResolveRelation<TFor, TBase>(params object[] arg)
         {
             return (TBase)ResolveRelation(typeof(TFor), typeof(TBase), arg);
+        }
+
+        private class TypeInjectionInfo
+        {
+            public readonly InjectionMemberInfo<PropertyInfo>[] PropertyInjectionInfos;
+            public readonly InjectionMemberInfo<FieldInfo>[] FieldInjectionInfos;
+        
+            public TypeInjectionInfo(InjectionMemberInfo<PropertyInfo>[] propertyInjectionInfos, InjectionMemberInfo<FieldInfo>[] fieldInjectionInfos)
+            {
+                PropertyInjectionInfos = propertyInjectionInfos;
+                FieldInjectionInfos = fieldInjectionInfos;
+            }
+        
+            public class InjectionMemberInfo<T> where T : MemberInfo
+            {
+                public readonly T MemberInfo;
+                public readonly Type MemberType;
+                public readonly string InjectName;
+        
+                public InjectionMemberInfo(T memberInfo, Type memberType, string injectName)
+                {
+                    MemberInfo = memberInfo;
+                    MemberType = memberType;
+                    InjectName = injectName;
+                }
+            }
         }
     }
 
@@ -462,5 +511,4 @@ namespace uFrame.IOC
         }
         public string Name { get; set; }
     }
-
 }

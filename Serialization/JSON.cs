@@ -44,6 +44,7 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Globalization;
 using System.Linq;
 using System.Text;
 using UnityEngine;
@@ -184,31 +185,59 @@ namespace uFrame.Serialization {
             }
         }
 
-        public override string ToString()
-        {
-            string result = "{";
+        public override void WriteToStringBuilder(StringBuilder stringBuilder) {
+            stringBuilder.Append('{');
+            bool isFirstItemWritten = false;
             foreach (KeyValuePair<string, JSONNode> N in m_Dict)
             {
-                if (result.Length > 2)
-                    result += ", ";
-                result += string.Format("\"{0}\":{1}", Escape(N.Key), N.Value.ToString());
+                if (isFirstItemWritten)
+                     stringBuilder.Append(", ");
+                stringBuilder.Append('"');
+                stringBuilder.Append(Escape(N.Key));
+                stringBuilder.Append("\":");
+                N.Value.WriteToStringBuilder(stringBuilder);
+                isFirstItemWritten = true;
             }
-            result += "}";
-            return result;
+            stringBuilder.Append('}');
+        }
+
+        public override void WriteToStringBuilder(StringBuilder stringBuilder, string aPrefix) {
+            string prefixPadded = aPrefix + "   ";
+
+            stringBuilder.Append("{ ");
+            bool isFirstItemWritten = false;
+            foreach (KeyValuePair<string, JSONNode> N in m_Dict)
+            {
+                if (isFirstItemWritten)
+                     stringBuilder.Append(", ");
+
+                stringBuilder.Append('\n');
+                stringBuilder.Append(prefixPadded);
+
+                stringBuilder.Append('"');
+                stringBuilder.Append(Escape(N.Key));
+                stringBuilder.Append("\" : ");
+
+                N.Value.WriteToStringBuilder(stringBuilder, prefixPadded);
+                isFirstItemWritten = true;
+            }
+            stringBuilder.Append('\n');
+            stringBuilder.Append(aPrefix);
+            stringBuilder.Append('}');
+        }
+
+        public override string ToString()
+        {
+            StringBuilder stringBuilder = new StringBuilder(8);
+            WriteToStringBuilder(stringBuilder);
+            return stringBuilder.ToString();
         }
 
         public override string ToString(string aPrefix)
         {
-            string result = "{ ";
-            foreach (KeyValuePair<string, JSONNode> N in m_Dict)
-            {
-                if (result.Length > 3)
-                    result += ", ";
-                result += string.Format("\n{0}   ", aPrefix);
-                result += string.Format("\"{0}\" : {1}", Escape(N.Key), N.Value.ToString(aPrefix + "   "));
-            }
-            result += string.Format("\n{0}}}", aPrefix);
-            return result;
+            StringBuilder stringBuilder = new StringBuilder(12);
+            WriteToStringBuilder(stringBuilder);
+            return stringBuilder.ToString();
         }
     }
     public class JSONData : JSONNode
@@ -298,44 +327,40 @@ namespace uFrame.Serialization {
             aWriter.Write(m_Data);
         }
 
+        public override void WriteToStringBuilder(StringBuilder stringBuilder) {
+            if (JSONConversions.ConvertToString(AsInt) == this.m_Data)
+            {
+                stringBuilder.Append(Escape(m_Data));
+                return;
+            }
+
+            if (JSONConversions.ConvertToString(AsBool) == this.m_Data)
+            {
+                stringBuilder.Append(Escape(m_Data));
+                return;
+            }
+
+            stringBuilder.Append('"');
+            stringBuilder.Append(Escape(m_Data));
+            stringBuilder.Append('"');
+        }
+
+        public override void WriteToStringBuilder(StringBuilder stringBuilder, string aPrefix) {
+            WriteToStringBuilder(stringBuilder);
+        }
+
         public override string ToString()
         {
-            var tmp = new JSONData("");
-            tmp.AsInt = AsInt;
-
-            if (tmp.m_Data == this.m_Data)
-            {
-                return string.Format("{0}", Escape(m_Data));
-            }
-
-            tmp.AsBool = AsBool;
-
-            if (tmp.m_Data == this.m_Data)
-            {
-                return string.Format("{0}", Escape(m_Data));
-            }
-
-            return string.Format("\"{0}\"", Escape(m_Data));
+            StringBuilder stringBuilder = new StringBuilder(8);
+            WriteToStringBuilder(stringBuilder);
+            return stringBuilder.ToString();
         }
 
         public override string ToString(string aPrefix)
         {
-            var tmp = new JSONData("");
-            tmp.AsInt = AsInt;
-
-            if (tmp.m_Data == this.m_Data)
-            {
-                return string.Format("{0}", Escape(m_Data));
-            }
-
-            tmp.AsBool = AsBool;
-
-            if (tmp.m_Data == this.m_Data)
-            {
-                return string.Format("{0}", Escape(m_Data));
-            }
-
-            return string.Format("\"{0}\"", Escape(m_Data));
+            StringBuilder stringBuilder = new StringBuilder(12);
+            WriteToStringBuilder(stringBuilder);
+            return stringBuilder.ToString();
         }
     }
     public class JSONLazyCreator : JSONNode
@@ -582,6 +607,14 @@ namespace uFrame.Serialization {
             return "JSONNode";
         }
 
+        public virtual void WriteToStringBuilder(StringBuilder stringBuilder)
+        {
+        }
+
+        public virtual void WriteToStringBuilder(StringBuilder stringBuilder, string aPrefix)
+        {
+        }
+
         #endregion common interface
 
         #region typecasting properties
@@ -598,14 +631,11 @@ namespace uFrame.Serialization {
         {
             get
             {
-                bool v = false;
-                if (bool.TryParse(Value, out v))
-                    return v;
-                return !string.IsNullOrEmpty(Value);
+                return JSONConversions.ParseAsBool(Value);
             }
             set
             {
-                Value = (value) ? "true" : "false";
+                Value = JSONConversions.ConvertToString(value);
             }
         }
 
@@ -613,30 +643,23 @@ namespace uFrame.Serialization {
         {
             get
             {
-                double v = 0.0;
-                if (double.TryParse(Value, out v))
-                    return v;
-                return 0.0;
+                return JSONConversions.ParseAsDouble(Value);
             }
             set
             {
-                Value = value.ToString();
+                Value = JSONConversions.ConvertToString(value);
             }
         }
 
         public virtual float AsFloat
         {
-            get
+            get 
             {
-                float v = 0.0f;
-                if (Value == null) return 0.0f;
-                if (float.TryParse(Value, out v))
-                    return v;
-                return 0.0f;
+                return JSONConversions.ParseAsFloat(Value);
             }
             set
             {
-                Value = value.ToString();
+                Value = JSONConversions.ConvertToString(value);
             }
         }
 
@@ -644,14 +667,11 @@ namespace uFrame.Serialization {
         {
             get
             {
-                int v = 0;
-                if (int.TryParse(Value, out v))
-                    return v;
-                return 0;
+                return JSONConversions.ParseAsInt(Value);
             }
             set
             {
-                Value = value.ToString();
+                Value = JSONConversions.ConvertToString(value);
             }
         }
 
@@ -1052,26 +1072,47 @@ namespace uFrame.Serialization {
 
         internal static string Escape(string aText)
         {
-
-
             if (aText == null)
                 return string.Empty;
-            var sb = new StringBuilder();
-            foreach (char c in aText)
-            {
-                switch (c)
-                {
-                    case '\\': sb.Append("\\\\"); break;
-                    case '\"': sb.Append("\\\""); break;
-                    case '\n': sb.Append("\\n"); break;
-                    case '\r': sb.Append("\\r"); break;
-                    case '\t': sb.Append("\\t"); break;
-                    case '\b': sb.Append("\\b"); break;
-                    case '\f': sb.Append("\\f"); break;
-                    default: sb.Append(c); break;
+
+            bool startWritten = false;
+            StringBuilder sb = null;
+            for (int i = 0, length = aText.Length; i < length; i++) {
+                char c = aText[i];
+                switch (c) {
+                    case '\\':
+                    case '\"':
+                    case '\n':
+                    case '\r':
+                    case '\t':
+                    case '\b':
+                    case '\f':
+                        if (!startWritten) {
+                            startWritten = true;
+                            sb = new StringBuilder(length + 32); // ballpark guess
+                            sb.Append(aText, 0, i);
+                        }
+
+                        switch (c)
+                        {
+                            case '\\': sb.Append("\\\\"); break;
+                            case '\"': sb.Append("\\\""); break;
+                            case '\n': sb.Append("\\n"); break;
+                            case '\r': sb.Append("\\r"); break;
+                            case '\t': sb.Append("\\t"); break;
+                            case '\b': sb.Append("\\b"); break;
+                            case '\f': sb.Append("\\f"); break;
+                        }
+                        break;
+                    default:
+                        if (startWritten) {
+                            sb.Append(c);
+                        }
+                        
+                        break;
                 }
             }
-            return sb.ToString();
+            return sb == null ? aText : sb.ToString();
         }
 
 #if USE_SharpZipLib
@@ -1205,34 +1246,144 @@ namespace uFrame.Serialization {
             }
         }
 
-        public override string ToString()
-        {
-            string result = "[ ";
+        public override void WriteToStringBuilder(StringBuilder stringBuilder) {
+            stringBuilder.Append("[ ");
+            bool isFirstItemWritten = false;
             for (int index = 0; index < m_List.Count; index++)
             {
                 JSONNode N = m_List[index];
-                if (result.Length > 2)
-                    result += ", ";
-                result += N.ToString();
+                if (isFirstItemWritten)
+                     stringBuilder.Append(", ");
+                N.WriteToStringBuilder(stringBuilder);
+                isFirstItemWritten = true;
             }
-            result += " ]";
-            return result;
+            stringBuilder.Append(" ]");
+        }
+
+        public override void WriteToStringBuilder(StringBuilder stringBuilder, string aPrefix) {
+            string prefixPadded = aPrefix + "   ";
+
+            stringBuilder.Append("[ ");
+            bool isFirstItemWritten = false;
+            for (int index = 0; index < m_List.Count; index++)
+            {
+                JSONNode N = m_List[index];
+                if (isFirstItemWritten)
+                     stringBuilder.Append(", ");
+
+                stringBuilder.Append('\n');
+                stringBuilder.Append(prefixPadded);
+
+                N.WriteToStringBuilder(stringBuilder, prefixPadded);
+                isFirstItemWritten = true;
+            }
+            stringBuilder.Append('\n');
+            stringBuilder.Append(aPrefix);
+            stringBuilder.Append(" ]");
+        }
+
+        public override string ToString()
+        {
+            StringBuilder stringBuilder = new StringBuilder(8);
+            WriteToStringBuilder(stringBuilder);
+            return stringBuilder.ToString();
         }
 
         public override string ToString(string aPrefix)
         {
-            string result = "[ ";
-            foreach (JSONNode N in m_List)
-            {
-                if (result.Length > 3)
-                    result += ", ";
-                result += string.Format("\n{0}   ", aPrefix);
-                result += N.ToString(string.Format("{0}   ", aPrefix));
-            }
-            result += string.Format("\n{0}]", aPrefix);
-            return result;
+            StringBuilder stringBuilder = new StringBuilder(12);
+            WriteToStringBuilder(stringBuilder);
+            return stringBuilder.ToString();
         }
     }
     // End of JSONNode
 
+   internal static class JSONConversions 
+   {
+       private static readonly CultureInfo _cultureInfo = CultureInfo.InvariantCulture;
+
+       public static double ParseAsDouble(string value) 
+       {
+           if (string.IsNullOrEmpty(value))
+           {
+               return 0.0;
+           }
+
+           double v;
+           if (double.TryParse(value, out v))
+           {
+               return v;
+           }
+
+           return 0.0;
+       }
+
+       public static float ParseAsFloat(string value)
+       {
+           if (string.IsNullOrEmpty(value))
+           {
+               return 0f;
+           }
+
+           float v;
+           if (float.TryParse(value, out v))
+           {
+               return v;
+           }
+
+           return 0f;
+       }
+
+       public static bool ParseAsBool(string value)
+       {
+           if (string.IsNullOrEmpty(value))
+           {
+               return false;
+           }
+
+           bool v;
+           if (bool.TryParse(value, out v))
+           {
+               return v;
+           }
+
+           return true;
+       }
+
+       public static int ParseAsInt(string value)
+       {
+           if (string.IsNullOrEmpty(value))
+           {
+               return 0;
+           }
+
+           int v;
+           if (int.TryParse(value, out v))
+           {
+               return v;
+           }
+
+           return 0;
+       }
+
+       public static string ConvertToString(int value)
+       {
+           return value.ToString(_cultureInfo);
+       }
+
+       public static string ConvertToString(float value)
+       {
+           return value.ToString(_cultureInfo);
+       }
+
+       public static string ConvertToString(double value)
+       {
+           return value.ToString(_cultureInfo);
+       }
+
+       public static string ConvertToString(bool value)
+       {
+           return value ? "true" : "false";
+       }
+   }
 }
