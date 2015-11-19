@@ -98,6 +98,7 @@ namespace uFrame.IOC
             if (obj == null) return;
 
             Type objectType = obj.GetType();
+
             TypeInjectionInfo typeInjectionInfo;
             if (!_typeInjectionInfos.TryGetValue(objectType, out typeInjectionInfo)) {
                 List<TypeInjectionInfo.InjectionMemberInfo<PropertyInfo>> propertyInjectionInfos = new List<TypeInjectionInfo.InjectionMemberInfo<PropertyInfo>>();
