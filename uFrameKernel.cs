@@ -132,15 +132,17 @@ namespace uFrame.Kernel
             foreach (var item in allServices)
                 Services.Add(item);
 
-            foreach (var service in allServices)
+            for (int index = 0; index < allServices.Length; index++)
             {
+                var service = allServices[index];
+                this.Publish(new ServiceLoaderEvent() { State = ServiceState.Loading, Service = service, GlobalProgress = (index+1)/(float)allServices.Length });
                 yield return StartCoroutine(service.SetupAsync());
+                this.Publish(new ServiceLoaderEvent() { State = ServiceState.Loaded, Service = service });
+
             }
             foreach (var service in allServices)
             {
-                this.Publish(new ServiceLoaderEvent() { State = ServiceState.Loading, Service = service });
                 service.Setup();
-                this.Publish(new ServiceLoaderEvent() { State = ServiceState.Loaded, Service = service });
             } 
             foreach (var service in allServices)
             {
@@ -240,6 +242,7 @@ namespace uFrame.Kernel
     {
         public ServiceState State { get; set; }
         public ISystemService Service { get; set; }
+        public float GlobalProgress { get; set; }
     }
 
     public class SceneLoaderEvent

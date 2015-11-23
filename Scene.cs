@@ -51,22 +51,22 @@ namespace uFrame.Kernel
         /// In this class we override the start method so that we can trigger the kernel to load if its not already.
         /// </summary>
         /// <returns></returns>
-        protected override IEnumerator Start()
+        protected override void Start()
         {
-            this.KernelLoading();
             if (!uFrameKernel.IsKernelLoaded)
             {
                 Name = Application.loadedLevelName;
-                yield return StartCoroutine(uFrameKernel.InstantiateSceneAsyncAdditively(KernelScene));
+                StartCoroutine(uFrameKernel.InstantiateSceneAsyncAdditively(KernelScene));
             }
-            while (!uFrameKernel.IsKernelLoaded) yield return null;
-            this.KernelLoaded();
-            this.Publish(new SceneAwakeEvent() {Scene = this});
+
+            base.Start();
         }
 
-
-
-
+        public override void KernelLoaded()
+        {
+            base.KernelLoaded();
+            this.Publish(new SceneAwakeEvent() { Scene = this });
+        }
     }
 
     /// <summary>

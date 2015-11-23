@@ -59,11 +59,20 @@ namespace uFrame.Kernel
             EventAggregator.Publish(eventMessage);
         }
 
-        protected virtual IEnumerator Start()
+        protected virtual void Start()
         {
             KernelLoading();
-            while (!uFrameKernel.IsKernelLoaded) yield return null;
-            KernelLoaded();
+            if (!uFrameKernel.IsKernelLoaded)
+                uFrameKernel.EventAggregator
+                .GetEvent<KernelLoadedEvent>()
+                .Take(1)
+                .Subscribe(x => KernelLoaded());
+            else KernelLoaded();
+        }
+
+        void Update()
+        {
+            
         }
 
         /// <summary>
