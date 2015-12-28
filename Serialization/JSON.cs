@@ -230,10 +230,12 @@ namespace uFrame.Serialization {
             AsVector2 = value;
         }
 #if UNITY_DLL
+
         public JSONData(Quaternion value)
         {
             AsQuaternion = value;
         }
+
 #endif
 
         public JSONData(string aData)
@@ -662,7 +664,7 @@ namespace uFrame.Serialization {
                 return this as JSONClass;
             }
         }
-#if UNITY_DLL || UNITY_4_0 || UNITY_4_1||UNITY_4_2 || UNITY_4_3 || UNITY_4_4 || UNITY_4_5 || UNITY_4_6 || UNITY_5_0 || UNITY_5_1 || UNITY_5_2 || UNITY_3_0
+#if UNITY_DLL || UNITY_4_0 || UNITY_4_1||UNITY_4_2 || UNITY_4_3 || UNITY_4_4 || UNITY_4_5 || UNITY_4_6 || UNITY_5 || UNITY_3_0
         public virtual Quaternion AsQuaternion
         {
             get
