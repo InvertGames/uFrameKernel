@@ -126,7 +126,8 @@ namespace uFrame.Kernel
             {
                 this.Publish(new ServiceLoaderEvent() {State = ServiceState.Loading, Service = service});
                 service.Setup();
-                yield return StartCoroutine(service.SetupAsync());
+                var setupAsync = service.SetupAsync();
+                if(setupAsync!= null) yield return StartCoroutine(setupAsync);
                 this.Publish(new ServiceLoaderEvent() {State = ServiceState.Loaded, Service = service});
             }
 
